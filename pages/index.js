@@ -130,6 +130,14 @@ export default function Home() {
     }
   };
 
+  const claim = async (tokenAddress) => {
+    const result = await action('unstake', 0, tokenAddress);
+    if (result) {
+      const output = 'Congratulations!';
+      document.querySelector('#result').innerHTML = output;
+    }
+  };
+
   const disconnect = async () => {
     localStorage.removeItem('wallet');
     setConnected(false);
@@ -432,36 +440,39 @@ export default function Home() {
                                 value={inputValue}
                                 onChange={handleInputChange}
                               />
-                              <button
-                                className="btn btn-secondary"
-                                onClick={() =>
-                                  setInputValue(poolInfo.userBalance ?? 0)
-                                }>
-                                MAX
-                              </button>
                             </div>
                             {error && (
                               <div className="text-danger">{error}</div>
                             )}
 
-                            <div className="d-flex justify-content-around my-3">
+                            <div
+                              className="d-flex justify-content-around my-3"
+                              style={{ gap: '10px' }}>
                               <button
-                                className="btn btn-primary"
+                                className="btn btn-primary w-100"
                                 onClick={() => stake(poolInfo.tokenAddress)}
                                 disabled={!connected}>
                                 STAKE
                               </button>
                               <button
-                                className="btn btn-primary"
+                                className="btn btn-primary w-100"
                                 onClick={() => unstake(poolInfo.tokenAddress)}
                                 disabled={!connected}>
-                                UNSTAKE
+                                UNSTAKE & CLAIM
                               </button>
                             </div>
-                            <div className="d-flex justify-content-center mb-1">
+                            <div
+                              className="d-flex justify-content-around mb-1"
+                              style={{ gap: '10px' }}>
+                              <button
+                                onClick={() => claim(poolInfo.tokenAddress)}
+                                className="btn btn-success w-100"
+                                disabled={!connected}>
+                                Claim
+                              </button>
                               <button
                                 onClick={autoCompound}
-                                className="btn btn-success"
+                                className="btn btn-success w-100"
                                 disabled={!connected}>
                                 Auto Compound
                               </button>
@@ -524,7 +535,7 @@ export default function Home() {
                       <div className="d-flex justify-content-between">
                         <p>Pending Rewards</p>
                         <p className="fw-bold">
-                          {holderInfo.pendingRewards ?? 0} ETH
+                          {holderInfo.pendingRewards ?? 0} ARB
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">

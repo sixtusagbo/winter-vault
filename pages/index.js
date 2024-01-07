@@ -130,8 +130,8 @@ export default function Home() {
     }
   };
 
-  const claim = async (tokenAddress) => {
-    const result = await action('unstake', 0, tokenAddress);
+  const claimStakeRewards = async (tokenAddress) => {
+    const result = await action('unstake', '0', tokenAddress);
     if (result) {
       const output = 'Congratulations!';
       document.querySelector('#result').innerHTML = output;
@@ -465,11 +465,14 @@ export default function Home() {
                               className="d-flex justify-content-around mb-1"
                               style={{ gap: '10px' }}>
                               <button
-                                onClick={() => claim(poolInfo.tokenAddress)}
+                                onClick={() =>
+                                  claimStakeRewards(poolInfo.tokenAddress)
+                                }
                                 className="btn btn-success w-100"
                                 disabled={!connected}>
                                 Claim
                               </button>
+
                               <button
                                 onClick={autoCompound}
                                 className="btn btn-success w-100"

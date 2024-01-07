@@ -96,7 +96,7 @@ export const getPoolDetails = async () => {
   );
   const userStaked = Number(
     await convertToEth('szabo', userStakedArray['amount'].toString())
-  );
+  ).toFixed('4');
   const totalStaked = tokenBalances.pool.toFixed('2');
 
   const poolStats = {

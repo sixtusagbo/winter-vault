@@ -22,6 +22,12 @@ export default function Document() {
           href="https://fonts.googleapis.com/icon?family=Material+Icons"
           rel="stylesheet"
         />
+
+        {/* Font Awesome */}
+        <link
+          rel="stylesheet"
+          href="https://use.fontawesome.com/releases/v6.5.1/css/all.css"
+        />
       </Head>
       <body>
         <Main />

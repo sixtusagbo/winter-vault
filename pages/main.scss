@@ -3,6 +3,15 @@ $background: #314e69;
 
 @import '~bootstrap/scss/bootstrap';
 
+@keyframes zoomOut {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0);
+  }
+}
+
 .stake-info {
   display: grid;
   grid-template-columns: 1fr;
@@ -134,4 +143,8 @@ input.form-control.stake-amount::placeholder {
   background: linear-gradient(270deg, #11d617, #0752bb);
   white-space: nowrap;
   border-radius: 16px;
+}
+
+#result {
+  display: none;
 }

@@ -16,6 +16,7 @@ import StormCardSkeleton from '@/components/StormCardSkeleton';
 import ConfettiExplosion from 'react-confetti-explosion';
 import { info } from 'sass';
 import numeral from 'numeral';
+import ActionButton from '@/components/ActionButton';
 
 const CHAIN_ID = 5;
 
@@ -112,29 +113,87 @@ export default function Home() {
     setInputValue(value);
   };
 
-  const stake = async (tokenAddress) => {
-    const amount = document.querySelector('#stakeAmount').value;
-    const result = await action('stake', amount, tokenAddress);
+  const displayResult = (result) => {
+    const resultDiv = document.querySelector('#result');
+    resultDiv.innerHTML = result;
+    resultDiv.style.display = 'block';
+
+    setTimeout(() => {
+      resultDiv.style.display = 'none';
+    }, 5000);
+  };
+
+  const stake = async (setLoading, setDone, tokenAddress) => {
+    const amount = inputValue;
+    if (amount === 0 || amount === '') {
+      setError('Amount cannot be empty');
+      return;
+    }
+    setLoading(true);
+    const result = await action('stake', amount, tokenAddress).then((value) => {
+      setLoading(false);
+      setDone(true);
+      setTimeout(() => setDone(false), 5000);
+
+      return value;
+    });
+    setInputValue('');
+
     if (result) {
-      const output = 'Stake successful!';
-      document.querySelector('#result').innerHTML = output;
+      displayResult('Successfully staked!');
     }
   };
 
-  const unstake = async (tokenAddress) => {
-    const amount = document.querySelector('#stakeAmount').value;
-    const result = await action('unstake', amount, tokenAddress);
+  const unstake = async (setLoading, setDone, tokenAddress) => {
+    const amount = inputValue;
+    if (amount === 0 || amount === '') {
+      setError('Amount cannot be empty');
+      return;
+    }
+    setLoading(true);
+    const result = await action('unstake', amount, tokenAddress).then(
+      (value) => {
+        setLoading(false);
+        setDone(true);
+        setTimeout(() => setDone(false), 5000);
+
+        return value;
+      }
+    );
+    setInputValue('');
+
     if (result) {
-      const output = 'Unstaked successfully!';
-      document.querySelector('#result').innerHTML = output;
+      displayResult('Successfully unstaked!');
     }
   };
 
-  const claimStakeRewards = async (tokenAddress) => {
-    const result = await action('unstake', '0', tokenAddress);
+  const claimStakeRewards = async (setLoading, setDone, tokenAddress) => {
+    setLoading(true);
+    const result = await action('unstake', '0', tokenAddress).then((value) => {
+      setLoading(false);
+      setDone(true);
+      setTimeout(() => setDone(false), 5000);
+
+      return value;
+    });
+
     if (result) {
-      const output = 'Congratulations!';
-      document.querySelector('#result').innerHTML = output;
+      displayResult('Congratulations! You have claimed your rewards.');
+    }
+  };
+
+  const compound = async (setLoading, setDone, _) => {
+    setLoading(true);
+    const result = await autoCompound().then((value) => {
+      setLoading(false);
+      setDone(true);
+      setTimeout(() => setDone(false), 5000);
+
+      return value;
+    });
+
+    if (result) {
+      displayResult('Successfully auto-compounded!');
     }
   };
 
@@ -417,7 +476,6 @@ export default function Home() {
                             <h1 className="fs-5" id="stateModalLabel">
                               Stake <span className="fw-bold">STM</span>
                             </h1>
-                            <p className="ms-5" id="result"></p>
                           </div>
                           <button
                             type="button"
@@ -427,11 +485,15 @@ export default function Home() {
                         </div>
                         <div className="modal-body">
                           <div className="d-flex flex-column">
+                            <div
+                              className="alert alert-success p-2"
+                              role="alert"
+                              id="result"></div>
                             <div className="d-flex">
                               <input
                                 type="number"
                                 placeholder="0"
-                                className={`form-control stake-amount me-2 w-100 ${
+                                className={`form-control stake-amount w-100 ${
                                   error
                                     ? 'text-danger border border-danger'
                                     : ''
@@ -448,37 +510,40 @@ export default function Home() {
                             <div
                               className="d-flex justify-content-around my-3"
                               style={{ gap: '10px' }}>
-                              <button
-                                className="btn btn-primary w-100"
-                                onClick={() => stake(poolInfo.tokenAddress)}
-                                disabled={!connected}>
-                                STAKE
-                              </button>
-                              <button
-                                className="btn btn-primary w-100"
-                                onClick={() => unstake(poolInfo.tokenAddress)}
-                                disabled={!connected}>
-                                UNSTAKE & CLAIM
-                              </button>
+                              <ActionButton
+                                connected={connected}
+                                action={stake}
+                                text="Stake"
+                                btnType="primary"
+                                address={poolInfo.tokenAddress}
+                              />
+
+                              <ActionButton
+                                connected={connected}
+                                action={unstake}
+                                text="Unstake &amp; Claim"
+                                btnType="primary"
+                                address={poolInfo.tokenAddress}
+                              />
                             </div>
                             <div
                               className="d-flex justify-content-around mb-1"
                               style={{ gap: '10px' }}>
-                              <button
-                                onClick={() =>
-                                  claimStakeRewards(poolInfo.tokenAddress)
-                                }
-                                className="btn btn-success w-100"
-                                disabled={!connected}>
-                                Claim
-                              </button>
+                              <ActionButton
+                                connected={connected}
+                                action={claimStakeRewards}
+                                text="Claim"
+                                btnType="outline-primary"
+                                address={poolInfo.tokenAddress}
+                              />
 
-                              <button
-                                onClick={autoCompound}
-                                className="btn btn-success w-100"
-                                disabled={!connected}>
-                                Auto Compound
-                              </button>
+                              <ActionButton
+                                connected={connected}
+                                action={compound}
+                                text="Auto Compound"
+                                btnType="outline-primary"
+                                address={poolInfo.tokenAddress}
+                              />
                             </div>
                           </div>
                         </div>

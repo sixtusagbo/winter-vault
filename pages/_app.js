@@ -89,7 +89,7 @@ export default function App({ Component, pageProps }) {
                         href="https://discord.com/invite/ZBcywm82S6">
                         <img src="discord.png" alt="" />
                       </a>
-                      <a target="_blank" href="https://t.me/Winter_Storm">
+                      <a target="_blank" href="https://t.me/winterstorm_Fi">
                         <img src="telegram.png" alt="" />
                       </a>
                       <a

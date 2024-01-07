@@ -17,6 +17,7 @@ import ConfettiExplosion from 'react-confetti-explosion';
 import { info } from 'sass';
 import numeral from 'numeral';
 import ActionButton from '@/components/ActionButton';
+import HolderActionButton from '@/components/HolderActionButton';
 
 const CHAIN_ID = 5;
 
@@ -204,30 +205,43 @@ export default function Home() {
     setHolderInfo({});
   };
 
-  const updateHolder = async (e) => {
+  const updateHolder = async (e, setLoading, setDone) => {
+    setLoading(true);
     e.target.disabled = true;
 
     try {
-      await updateHolderRewards();
+      await updateHolderRewards().then((_) => {
+        setLoading(false);
+        setDone(true);
+        setTimeout(() => setDone(false), 5000);
+      });
     } catch (err) {
+      setLoading(false);
       console.log(err);
+    } finally {
+      e.target.disabled = false;
     }
-
-    e.target.disabled = false;
   };
 
-  const claimForHolder = async (e) => {
+  const claimForHolder = async (e, setLoading, setDone) => {
+    setLoading(true);
     e.target.disabled = true;
 
     try {
-      await claimHolderRewards().then((_) => setIsExploding(true));
+      await claimHolderRewards().then((_) => {
+        setIsExploding(true);
+        setLoading(false);
+        setDone(true);
 
-      setTimeout(() => setIsExploding(false), 3000);
+        setTimeout(() => setDone(false), 5000);
+        setTimeout(() => setIsExploding(false), 3000);
+      });
     } catch (err) {
+      setLoading(false);
       console.log(err);
+    } finally {
+      e.target.disabled = false;
     }
-
-    e.target.disabled = false;
   };
 
   const getFormattedWalletAddress = () => {
@@ -621,21 +635,22 @@ export default function Home() {
                     </div>
 
                     <div className="storm_btns mt-3">
-                      <button
-                        className="btn btn-primary"
-                        onClick={updateHolder}
-                        disabled={!connected}>
-                        Update Points
-                      </button>
-                      <button
-                        className="btn btn-outline-primary d-flex justify-content-center align-items-center"
-                        onClick={claimForHolder}
-                        disabled={!connected}>
+                      <HolderActionButton
+                        connected={connected}
+                        action={updateHolder}
+                        className="btn btn-primary">
+                        <span className="me-2">Update Points</span>
+                      </HolderActionButton>
+
+                      <HolderActionButton
+                        connected={connected}
+                        action={claimForHolder}
+                        className="btn btn-outline-primary d-flex justify-content-center align-items-center">
                         {isExploding && (
                           <ConfettiExplosion {...largeConfetti} />
                         )}
-                        Claim Rewards
-                      </button>
+                        <span className="me-2">Claim Rewards</span>
+                      </HolderActionButton>
                     </div>
                   </div>
                 </div>

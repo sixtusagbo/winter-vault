@@ -1,27 +1,8 @@
-import { createWalletClient, custom } from 'viem';
-import { goerli } from 'viem/chains';
-import tokenABI from './erc20abi.json';
-import stormStakeABI from './stormStakeABI.json';
-import holderBonusABI from './holderBonusABI.json';
+import tokenABI from '../abi/erc20abi.json';
+import stormStakeABI from '../abi/stormStakeABI.json';
+import holderBonusABI from '../abi/holderBonusABI.json';
 import { ethers } from 'ethers';
-
-const stormStakeAddr = '0xC120Cf83c4426B9567f4dEa9556f5E47000CFC6A';
-
-const holderBonusAddr = '0x2F1f8d725c90aAEBBfbE575c4BBfE190D9999B4c';
-
-const web3Provider = async () => {
-  const [account] = await window.ethereum.request({
-    method: 'eth_requestAccounts',
-  });
-
-  const client = createWalletClient({
-    account,
-    chain: goerli,
-    transport: custom(window.ethereum),
-  });
-
-  return client;
-};
+import { stormStakeAddr, holderBonusAddr } from './ConstantsUtil';
 
 const convertToEth = async (type, value) => {
   switch (type) {
@@ -41,9 +22,9 @@ const convertToWei = async (value) => {
   return ethers.utils.parseEther(value);
 };
 
-export async function connectWallet() {
-  const connection = await web3Provider();
-  const provider = new ethers.providers.Web3Provider(connection);
+
+export async function connectWallet(walletProvider) {
+  const provider = new ethers.providers.Web3Provider(walletProvider);
   const signer = provider.getSigner();
   const stormStakeContract = new ethers.Contract(
     stormStakeAddr,
@@ -56,11 +37,10 @@ export async function connectWallet() {
     signer
   );
 
-  return { connection, signer, stormStakeContract, holderContract };
+  return { signer, stormStakeContract, holderContract };
 }
 
-export const fetchTokenBalance = async (tokenAddress, userWalletAddress) => {
-  const { signer } = await connectWallet();
+export const fetchTokenBalance = async (signer, tokenAddress, userWalletAddress) => {
   const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
   const poolBalance = await tokenContract.balanceOf(stormStakeAddr);
   const pool = await convertToEth(null, poolBalance);
@@ -70,23 +50,23 @@ export const fetchTokenBalance = async (tokenAddress, userWalletAddress) => {
   return { pool, user };
 };
 
-export const getPoolDetails = async () => {
-  const { connection, stormStakeContract } = await connectWallet();
-  const userWalletAddress = connection?.account?.address;
+export const getPoolDetails = async (walletProvider, address) => {
+  const { signer, stormStakeContract } = await connectWallet(walletProvider);
   const poolInfo = await stormStakeContract?.poolInfo(0);
   const poolId = 0;
   const tokenAddress = poolInfo[poolId];
   const rewardPerToken = poolInfo[3].toString();
   const tokenBalances = await fetchTokenBalance(
+    signer,
     tokenAddress,
-    userWalletAddress
+    address
   );
   const userStakedArray = await stormStakeContract?.userInfo(
     poolId,
-    userWalletAddress
+    address
   );
   const userRewardRaw = (
-    await stormStakeContract?.pendingReward(poolId, userWalletAddress)
+    await stormStakeContract?.pendingReward(poolId, address)
   ).toString();
   const bonusMultiplier = (
     await stormStakeContract?.BONUS_MULTIPLIER()
@@ -111,10 +91,10 @@ export const getPoolDetails = async () => {
   return poolStats;
 };
 
-export const action = async (action, amount, tokenAddress) => {
+export const action = async (walletProvider, action, amount, tokenAddress) => {
   try {
     const amountToWei = (await convertToWei(amount)).toString();
-    const { stormStakeContract, signer } = await connectWallet();
+    const { stormStakeContract, signer } = await connectWallet(walletProvider);
     if (action === 'unstake') {
       const result = await stormStakeContract
         ?.unstake(0, amountToWei)
@@ -139,8 +119,8 @@ export const action = async (action, amount, tokenAddress) => {
   }
 };
 
-export const autoCompound = async () => {
-  const { stormStakeContract } = await connectWallet();
+export const autoCompound = async (walletProvider) => {
+  const { stormStakeContract } = await connectWallet(walletProvider);
 
   try {
     const result = await stormStakeContract?.autoCompound().then((_) => true);
@@ -150,11 +130,10 @@ export const autoCompound = async () => {
   }
 };
 
-export const getHolderDetails = async () => {
-  const { connection, holderContract } = await connectWallet();
-  const userWalletAddress = connection?.account?.address;
+export const getHolderDetails = async (walletProvider, address) => {
+  const { holderContract } = await connectWallet(walletProvider);
 
-  const holderInfo = await holderContract?.getUserView(userWalletAddress);
+  const holderInfo = await holderContract?.getUserView(address);
 
   const holderStats = {
     tokenBalance: Number(
@@ -185,7 +164,7 @@ export const switchChain = async (targetChainId) => {
 
     return result;
   } catch (switchError) {
-    // This error code indicates that the chain has not been added to MetaMask.
+    // This error code indicates that the chain has not been added.
     if (switchError.code === 4902) {
       try {
         await window.ethereum
@@ -211,17 +190,16 @@ export const switchChain = async (targetChainId) => {
   }
 };
 
-export const updateHolderRewards = async () => {
-  const { connection, holderContract } = await connectWallet();
-  const userWalletAddress = connection?.account?.address;
+export const updateHolderRewards = async (walletProvider, address) => {
+  const { holderContract } = await connectWallet(walletProvider);
 
   return await holderContract
-    ?.updatePoints(userWalletAddress)
+    ?.updatePoints(address)
     .then((_) => true);
 };
 
-export const claimHolderRewards = async () => {
-  const { holderContract } = await connectWallet();
+export const claimHolderRewards = async (walletProvider) => {
+  const { holderContract } = await connectWallet(walletProvider);
 
   return await holderContract?.claim().then((_) => true);
 };

@@ -6,6 +6,7 @@ import Head from 'next/head';
 import { useEffect } from 'react';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { SkeletonTheme } from 'react-loading-skeleton';
+import { Web3ModalProvider } from '@/context/Web3Modal';
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
@@ -64,9 +65,11 @@ export default function App({ Component, pageProps }) {
         />
       </Head>
 
-      <SkeletonTheme baseColor="#1A273B" highlightColor="#5C7C9D">
-        <Component {...pageProps} />
-      </SkeletonTheme>
+      <Web3ModalProvider>
+        <SkeletonTheme baseColor="#1A273B" highlightColor="#5C7C9D">
+          <Component {...pageProps} />
+        </SkeletonTheme>
+      </Web3ModalProvider>
 
       <footer className="footer">
         {/* Subscribe Form */}

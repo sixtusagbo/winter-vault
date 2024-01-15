@@ -5,21 +5,21 @@ import {
   claimHolderRewards,
   getHolderDetails,
   getPoolDetails,
+  switchChain,
   updateHolderRewards,
-} from '@/components/config';
+} from '@/utils/config';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { connectWallet } from '@/components/config';
-import { switchChain } from '@/components/config';
 import StormCardSkeleton from '@/components/StormCardSkeleton';
 import ConfettiExplosion from 'react-confetti-explosion';
-import { info } from 'sass';
-import numeral from 'numeral';
 import ActionButton from '@/components/ActionButton';
 import HolderActionButton from '@/components/HolderActionButton';
+import { useDisconnect, useWeb3Modal, useWeb3ModalAccount, useWeb3ModalEvents, useWeb3ModalProvider } from '@web3modal/ethers5/react';
+import { STM_BUY_URL } from '@/utils/ConstantsUtil';
+import dynamic from 'next/dynamic';
 
-const CHAIN_ID = 5;
+const SSRLessConnectionButton = dynamic(() => import('../components/ConnectionButton'), { ssr: false });
 
 export default function Home() {
   const [poolInfo, setPoolInfo] = useState({});
@@ -28,9 +28,12 @@ export default function Home() {
   const [error, setError] = useState('');
   const [holderInfo, setHolderInfo] = useState({});
   const [infoIntervalId, setInfoIntervalId] = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [currentChainId, setChainId] = useState(null);
   const [isExploding, setIsExploding] = useState(false);
+  const { address, chainId, isConnected } = useWeb3ModalAccount();
+  const { open } = useWeb3Modal();
+  const { walletProvider } = useWeb3ModalProvider();
+  const events = useWeb3ModalEvents();
+  const { disconnect } = useDisconnect();
 
   const largeConfetti = {
     force: 0.8,
@@ -40,54 +43,20 @@ export default function Home() {
     colors: ['#041E43', '#1471BF', '#5BB4DC', '#FC027B', '#66D805'],
   };
 
-  const connect = async () => {
-    if (currentChainId !== CHAIN_ID) {
-      const result = await switchChain(CHAIN_ID);
-      if (result) {
-        localStorage.setItem('currentChainId', CHAIN_ID);
-      }
-    }
-    try {
-      const { connection } = await connectWallet();
-      if (connection?.account?.address !== undefined) {
-        const walletAddress = connection.account.address;
-        localStorage.setItem('wallet', walletAddress);
-        setConnected(true);
-        setChainId(CHAIN_ID);
-        setLoading(true);
-      }
-    } catch (err) {
-      // Handle errors, such as user rejecting the connection request
-      console.error('Connection request was rejected by the user.', err);
-    }
-  };
-
-  const handleAccountsChanged = (accounts) => {
-    if (accounts.length === 0) {
-      // User has disconnected
-      localStorage.removeItem('wallet');
-      setConnected(false);
-    } else {
-      setConnected(true);
-    }
-  };
-
   const handleChainChanged = (chainId) => {
     const newChainId = Number(chainId.toString());
-    setChainId(newChainId);
-    localStorage.setItem('currentChainId', newChainId);
-    if (newChainId !== CHAIN_ID) {
-      disconnect();
+    if (newChainId !== 42161) {
+      disconnectApp();
     }
   };
 
   const getInterfaceInfo = async () => {
     const id = setInterval(async () => {
       const fetchData = async () => {
-        if (localStorage.getItem('wallet')) {
+        if (address) {
           try {
-            const poolDetails = await getPoolDetails();
-            const holderDetails = await getHolderDetails();
+            const poolDetails = await getPoolDetails(walletProvider, address);
+            const holderDetails = await getHolderDetails(walletProvider, address);
             setPoolInfo(poolDetails);
             setHolderInfo(holderDetails);
           } catch (err) {
@@ -131,7 +100,7 @@ export default function Home() {
       return;
     }
     setLoading(true);
-    const result = await action('stake', amount, tokenAddress).then((value) => {
+    const result = await action(walletProvider, 'stake', amount, tokenAddress).then((value) => {
       setLoading(false);
       setDone(true);
       setTimeout(() => setDone(false), 5000);
@@ -152,7 +121,7 @@ export default function Home() {
       return;
     }
     setLoading(true);
-    const result = await action('unstake', amount, tokenAddress).then(
+    const result = await action(walletProvider, 'unstake', amount, tokenAddress).then(
       (value) => {
         setLoading(false);
         setDone(true);
@@ -170,7 +139,7 @@ export default function Home() {
 
   const claimStakeRewards = async (setLoading, setDone, tokenAddress) => {
     setLoading(true);
-    const result = await action('unstake', '0', tokenAddress).then((value) => {
+    const result = await action(walletProvider, 'unstake', '0', tokenAddress).then((value) => {
       setLoading(false);
       setDone(true);
       setTimeout(() => setDone(false), 5000);
@@ -185,7 +154,7 @@ export default function Home() {
 
   const compound = async (setLoading, setDone, _) => {
     setLoading(true);
-    const result = await autoCompound().then((value) => {
+    const result = await autoCompound(walletProvider).then((value) => {
       setLoading(false);
       setDone(true);
       setTimeout(() => setDone(false), 5000);
@@ -198,11 +167,12 @@ export default function Home() {
     }
   };
 
-  const disconnect = async () => {
-    localStorage.removeItem('wallet');
-    setConnected(false);
+  const disconnectApp = async () => {
+    await disconnect();
     setPoolInfo({});
     setHolderInfo({});
+    clearInterval(infoIntervalId);
+    setLoading(false);
   };
 
   const updateHolder = async (e, setLoading, setDone) => {
@@ -210,7 +180,7 @@ export default function Home() {
     e.target.disabled = true;
 
     try {
-      await updateHolderRewards().then((_) => {
+      await updateHolderRewards(walletProvider, address).then((_) => {
         setLoading(false);
         setDone(true);
         setTimeout(() => setDone(false), 5000);
@@ -228,7 +198,7 @@ export default function Home() {
     e.target.disabled = true;
 
     try {
-      await claimHolderRewards().then((_) => {
+      await claimHolderRewards(walletProvider).then((_) => {
         setIsExploding(true);
         setLoading(false);
         setDone(true);
@@ -244,44 +214,43 @@ export default function Home() {
     }
   };
 
-  const getFormattedWalletAddress = () => {
-    return localStorage.getItem('wallet')
-      ? `${localStorage.getItem('wallet').slice(0, 5)}...${localStorage
-          .getItem('wallet')
-          .slice(-4)}`
+  const formatAddress = () => {
+    return address ? `${address.slice(0, 5)}...${address.slice(-4)}`
       : '0x0...00';
-  };
-
-  const formatNumber = (number) => {
-    return numeral(number).format('0.0a').toUpperCase();
   };
 
   useEffect(() => {
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
 
       return () => {
-        window.ethereum.removeListener(
-          'accountsChanged',
-          handleAccountsChanged
-        );
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem('wallet')) {
-      setChainId(localStorage.getItem('currentChainId') ?? CHAIN_ID);
-      setConnected(true);
+    if (events.data.event === 'CONNECT_SUCCESS') {
+      setLoading(true);
       getInterfaceInfo();
-    } else if (infoIntervalId) {
-      clearInterval(infoIntervalId);
+    }
+  }, [events]);
+
+  useEffect(() => {
+    const switchToDefaultChain = async () => {
+      if (isConnected && chainId != 42161) {
+        await switchChain(42161);
+      }
+    }
+
+    switchToDefaultChain();
+    if (isConnected && Object.keys(holderInfo).length === 0) {
+      setLoading(true);
+      getInterfaceInfo();
     } else {
       setLoading(false);
     }
-  }, [currentChainId, connected]);
+  }, [isConnected, chainId]);
 
   return (
     <>
@@ -343,57 +312,7 @@ export default function Home() {
             </nav>
             <div className="d-flex justify-content-around">
               <div className="d-flex align-items-center">
-                <div className="mi-dropdown">
-                  <button
-                    className="mi-dropbtn d-flex align-items-center connect-btn"
-                    onClick={() => !connected && connect()}>
-                    {connected ? (
-                      <>{getFormattedWalletAddress()} &nbsp;</>
-                    ) : (
-                      'Connect Wallet'
-                    )}
-
-                    {connected && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="#fff"
-                        className="bi bi-chevron-down connectArrow"
-                        viewBox="0 0 16 16">
-                        <path
-                          fillRule="evenodd"
-                          d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"
-                        />
-                      </svg>
-                    )}
-                  </button>
-
-                  {connected && (
-                    <div className="mi-dropdown-content">
-                      <div className="d-flex justify-content-center align-items-center flex-column">
-                        <img
-                          className="mini-storm"
-                          src="Storm_150x150.png"
-                          alt=""
-                        />
-                        <p>{formatNumber(holderInfo?.tokenBalance)} STM</p>
-                      </div>
-                      <a
-                        href=""
-                        className="btn btn-info w-100"
-                        style={{ borderRadius: '12px', fontSize: '14px' }}>
-                        Buy STM
-                      </a>
-                      <button
-                        className="btn btn-primary w-100"
-                        style={{ borderRadius: '12px', fontSize: '14px' }}
-                        onClick={disconnect}>
-                        Disconnect
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <SSRLessConnectionButton isConnected={isConnected} openWeb3Modal={open} tokenBalance={holderInfo?.tokenBalance} disconnectApp={disconnectApp} formatAddress={formatAddress} />
               </div>
               <div id="hamburger">
                 <span></span>
@@ -468,9 +387,10 @@ export default function Home() {
                         Open Pool
                       </button>
                       <a
-                        href=""
+                        href={STM_BUY_URL}
                         className="btn btn-outline-primary text-primary"
-                        style={{ background: 'transparent' }}>
+                        style={{ background: 'transparent' }}
+                        target="_blank">
                         GET STM
                       </a>
                     </div>
@@ -507,11 +427,10 @@ export default function Home() {
                               <input
                                 type="number"
                                 placeholder="0"
-                                className={`form-control stake-amount w-100 ${
-                                  error
-                                    ? 'text-danger border border-danger'
-                                    : ''
-                                }`}
+                                className={`form-control stake-amount w-100 ${error
+                                  ? 'text-danger border border-danger'
+                                  : ''
+                                  }`}
                                 id="stakeAmount"
                                 value={inputValue}
                                 onChange={handleInputChange}
@@ -525,7 +444,7 @@ export default function Home() {
                               className="d-flex justify-content-around my-3"
                               style={{ gap: '10px' }}>
                               <ActionButton
-                                connected={connected}
+                                connected={isConnected}
                                 action={stake}
                                 text="Stake"
                                 btnType="primary"
@@ -533,7 +452,7 @@ export default function Home() {
                               />
 
                               <ActionButton
-                                connected={connected}
+                                connected={isConnected}
                                 action={unstake}
                                 text="Unstake &amp; Claim"
                                 btnType="primary"
@@ -544,7 +463,7 @@ export default function Home() {
                               className="d-flex justify-content-around mb-1"
                               style={{ gap: '10px' }}>
                               <ActionButton
-                                connected={connected}
+                                connected={isConnected}
                                 action={claimStakeRewards}
                                 text="Claim"
                                 btnType="outline-primary"
@@ -552,7 +471,7 @@ export default function Home() {
                               />
 
                               <ActionButton
-                                connected={connected}
+                                connected={isConnected}
                                 action={compound}
                                 text="Auto Compound"
                                 btnType="outline-primary"
@@ -636,14 +555,14 @@ export default function Home() {
 
                     <div className="storm_btns mt-3">
                       <HolderActionButton
-                        connected={connected}
+                        connected={isConnected}
                         action={updateHolder}
                         className="btn btn-primary">
                         <span className="me-2">Update Points</span>
                       </HolderActionButton>
 
                       <HolderActionButton
-                        connected={connected}
+                        connected={isConnected}
                         action={claimForHolder}
                         className="btn btn-outline-primary d-flex justify-content-center align-items-center">
                         {isExploding && (

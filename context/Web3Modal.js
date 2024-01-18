@@ -1,35 +1,27 @@
 "use client"
 
+import { defaultChainId, defaultNet } from '@/utils/ConstantsUtil'
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers5/react'
 
-// 1. Get projectId
+// Get projectId
 const projectId = process.env.NEXT_PUBLIC_WC_CLOUD_ID
 
-// 2. Set chains
-const arbitrum = {
-  chainId: 42161,
-  name: 'Arbitrum',
-  currency: 'ETH',
-  explorerUrl: 'https://arbiscan.io',
-  rpcUrl: 'https://arb1.arbitrum.io/rpc'
-}
-
-// 3. Create modal
+// Create modal
 const metadata = {
-  name: 'Storm',
-  description: 'My Website description',
-  url: 'https://mywebsite.com',
-  icons: ['https://avatars.mywebsite.com/']
+  name: 'Winter Storm',
+  description: 'Winter is Here',
+  url: 'https://vault.winterstorm.finance',
+  icons: ['https://raw.githubusercontent.com/Coded-Bro/Winter-Storm/main/storm_logo.png']
 }
 
 createWeb3Modal({
   ethersConfig: defaultConfig({ metadata }),
-  chains: [arbitrum],
+  chains: [defaultNet],
   themeMode: 'dark',
   tokens: {
-    42161: {
+    [defaultChainId]: {
       address: '0x47d6DbC99827cB929F274cd62Be2013c76E54a6a',
-      // image: 'token_image_url' //optional
+      image: 'https://raw.githubusercontent.com/Coded-Bro/Winter-Storm/main/storm_logo.png' //optional
     },
   },
   projectId

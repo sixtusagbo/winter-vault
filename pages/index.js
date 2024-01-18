@@ -18,6 +18,7 @@ import HolderActionButton from '@/components/HolderActionButton';
 import { useDisconnect, useWeb3Modal, useWeb3ModalAccount, useWeb3ModalEvents, useWeb3ModalProvider } from '@web3modal/ethers5/react';
 import { STM_BUY_URL } from '@/utils/ConstantsUtil';
 import dynamic from 'next/dynamic';
+import { defaultChainId } from '@/utils/ConstantsUtil';
 
 const SSRLessConnectionButton = dynamic(() => import('../components/ConnectionButton'), { ssr: false });
 
@@ -45,7 +46,7 @@ export default function Home() {
 
   const handleChainChanged = (chainId) => {
     const newChainId = Number(chainId.toString());
-    if (newChainId !== 42161) {
+    if (newChainId !== defaultChainId) {
       disconnectApp();
     }
   };
@@ -168,7 +169,9 @@ export default function Home() {
   };
 
   const disconnectApp = async () => {
-    await disconnect();
+    if (disconnect) {
+      await disconnect();
+    }
     setPoolInfo({});
     setHolderInfo({});
     clearInterval(infoIntervalId);
@@ -238,8 +241,8 @@ export default function Home() {
 
   useEffect(() => {
     const switchToDefaultChain = async () => {
-      if (isConnected && chainId != 42161) {
-        await switchChain(42161);
+      if (isConnected && chainId != defaultChainId) {
+        await switchChain(defaultChainId);
       }
     }
 
@@ -454,7 +457,7 @@ export default function Home() {
                               <ActionButton
                                 connected={isConnected}
                                 action={unstake}
-                                text="Unstake &amp; Claim"
+                                text="Unstake"
                                 btnType="primary"
                                 address={poolInfo.tokenAddress}
                               />
@@ -506,7 +509,7 @@ export default function Home() {
               <div className="con">
                 <div className="desc">
                   <h2 className="pc" style={{ marginTop: '100px' }}>
-                    BLIZZARD REWARDS SYSTEM
+                    HOLDERS REWARDS SYSTEM
                   </h2>
                   <p className="p">Storm Holders reward panel.</p>
                 </div>
@@ -528,7 +531,7 @@ export default function Home() {
                   <div className="operate">
                     <div className="stake-info w-100">
                       <div className="d-flex justify-content-between">
-                        <p>Accumulated Points</p>
+                        <p>APY</p>
                         <p className="fw-bold">
                           {holderInfo.accumulatedPoints ?? 0} PTS
                         </p>
@@ -540,7 +543,7 @@ export default function Home() {
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">
-                        <p>Blocks till next Blizzard</p>
+                        <p>Last Updated Time</p>
                         <p className="fw-bold">
                           {holderInfo.blocksTillNextBlizzard ?? 0} BLOCKS
                         </p>
@@ -558,7 +561,7 @@ export default function Home() {
                         connected={isConnected}
                         action={updateHolder}
                         className="btn btn-primary">
-                        <span className="me-2">Update Points</span>
+                        <span className="me-2">Update Reward</span>
                       </HolderActionButton>
 
                       <HolderActionButton
@@ -568,7 +571,7 @@ export default function Home() {
                         {isExploding && (
                           <ConfettiExplosion {...largeConfetti} />
                         )}
-                        <span className="me-2">Claim Rewards</span>
+                        <span className="me-2">Claim Reward</span>
                       </HolderActionButton>
                     </div>
                   </div>

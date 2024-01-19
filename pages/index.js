@@ -279,7 +279,7 @@ export default function Home() {
     };
 
     switchToDefaultChain();
-    if (isConnected && Object.keys(holderInfo).length === 0) {
+    if (isConnected && Object.keys(holderInfo).length < 2) {
       setLoading(true);
       getInterfaceInfo();
     } else {
@@ -396,7 +396,7 @@ export default function Home() {
                     <div className="stake-info w-100">
                       <div className="d-flex justify-content-between">
                         <p>APY&nbsp;</p>
-                        <p className="fw-bold">{poolInfo?.apy}%</p>
+                        <p className="fw-bold">{poolInfo?.apy ?? 0}%</p>
                       </div>
                       <div className="d-flex justify-content-between">
                         <p>Available $STM</p>

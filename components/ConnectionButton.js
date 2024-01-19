@@ -1,12 +1,7 @@
 import { STM_BUY_URL } from "@/utils/ConstantsUtil";
-import Image from "next/image";
-import numeral from 'numeral';
+import { formatMoney } from "@/utils/config";
 
 const ConnectionButton = ({ isConnected, openWeb3Modal, tokenBalance, disconnectApp, formatAddress }) => {
-  const formatMoney = (number) => {
-    return numeral(number).format('0.0a').toUpperCase();
-  };
-
   return (
     <div className="mi-dropdown">
       <button

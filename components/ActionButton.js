@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { tokenAddress } from '@/utils/ConstantsUtil';
 
-const ActionButton = ({ connected, address, action, text, btnType }) => {
+const ActionButton = ({ connected, action, text, btnType }) => {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   return (
     <button
       className={`btn btn-${btnType} w-100 d-flex justify-content-center align-items-center`}
-      onClick={() => action(setLoading, setDone, address)}
+      onClick={() => action(setLoading, setDone, tokenAddress)}
       disabled={!connected}>
       <span className="me-2">{text}</span>
 

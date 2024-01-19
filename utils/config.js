@@ -2,7 +2,12 @@ import tokenABI from '../abi/erc20abi.json';
 import stormStakeABI from '../abi/stormStakeABI.json';
 import holderBonusABI from '../abi/holderBonusABI.json';
 import { ethers } from 'ethers';
-import { stormStakeAddr, holderBonusAddr } from './ConstantsUtil';
+import {
+  stormStakeAddress,
+  holderBonusAddress,
+  tokenAddress,
+} from './ConstantsUtil';
+import numeral from 'numeral';
 
 const convertToEth = async (type, value) => {
   switch (type) {
@@ -22,17 +27,16 @@ const convertToWei = async (value) => {
   return ethers.utils.parseEther(value);
 };
 
-
 export async function connectWallet(walletProvider) {
   const provider = new ethers.providers.Web3Provider(walletProvider);
   const signer = provider.getSigner();
   const stormStakeContract = new ethers.Contract(
-    stormStakeAddr,
+    stormStakeAddress,
     stormStakeABI,
     signer
   );
   const holderContract = new ethers.Contract(
-    holderBonusAddr,
+    holderBonusAddress,
     holderBonusABI,
     signer
   );
@@ -40,9 +44,9 @@ export async function connectWallet(walletProvider) {
   return { signer, stormStakeContract, holderContract };
 }
 
-export const fetchTokenBalance = async (signer, tokenAddress, userWalletAddress) => {
+export const fetchTokenBalance = async (signer, userWalletAddress) => {
   const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
-  const poolBalance = await tokenContract.balanceOf(stormStakeAddr);
+  const poolBalance = await tokenContract.balanceOf(stormStakeAddress);
   const pool = await convertToEth(null, poolBalance);
   const userBalance = await tokenContract.balanceOf(userWalletAddress);
   const user = await convertToEth(null, userBalance);
@@ -52,40 +56,27 @@ export const fetchTokenBalance = async (signer, tokenAddress, userWalletAddress)
 
 export const getPoolDetails = async (walletProvider, address) => {
   const { signer, stormStakeContract } = await connectWallet(walletProvider);
-  const poolInfo = await stormStakeContract?.poolInfo(0);
-  const poolId = 0;
-  const tokenAddress = poolInfo[poolId];
-  const rewardPerToken = poolInfo[3].toString();
-  const tokenBalances = await fetchTokenBalance(
-    signer,
-    tokenAddress,
-    address
-  );
-  const userStakedArray = await stormStakeContract?.userInfo(
-    poolId,
-    address
-  );
-  const userRewardRaw = (
-    await stormStakeContract?.pendingReward(poolId, address)
-  ).toString();
-  const bonusMultiplier = (
-    await stormStakeContract?.BONUS_MULTIPLIER()
-  ).toString();
-  const userReward = Number(await convertToEth('szabo', userRewardRaw)).toFixed(
-    '2'
-  );
-  const userStaked = Number(
-    await convertToEth('szabo', userStakedArray['amount'].toString())
-  ).toFixed('4');
-  const totalStaked = tokenBalances.pool.toFixed('2');
+  const apy = Number((await stormStakeContract?.APY()).toString());
+  const userStakingInfo = await stormStakeContract?.getUserView(address);
+  const userStakedAmount = Number(
+    await convertToEth(null, userStakingInfo[0].toString())
+  ).toFixed(2);
+  const pendingReward = Number(
+    await convertToEth(null, userStakingInfo[1].toString())
+  ).toFixed(2);
+  const totalStakedRaw = await stormStakeContract?.totalStaked();
+  const totalAmountStaked = Number(
+    await convertToEth(null, totalStakedRaw.toString())
+  ).toFixed(2);
+  const tokenBalances = await fetchTokenBalance(signer, address);
+  const userBalance = tokenBalances.user.toFixed(2);
 
   const poolStats = {
-    totalStaked,
-    userStaked: userStaked,
-    reward: userReward,
-    multiplier: bonusMultiplier,
-    userBalance: tokenBalances.user.toFixed('2'),
-    tokenAddress: tokenAddress,
+    apy,
+    userStakedAmount,
+    pendingReward,
+    totalAmountStaked,
+    userBalance,
   };
 
   return poolStats;
@@ -97,19 +88,19 @@ export const action = async (walletProvider, action, amount, tokenAddress) => {
     const { stormStakeContract, signer } = await connectWallet(walletProvider);
     if (action === 'unstake') {
       const result = await stormStakeContract
-        ?.unstake(0, amountToWei)
+        ?.unstake(amountToWei)
         .then((_) => true);
       return result;
     } else {
       const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
       const approveTransfer = await tokenContract.approve(
-        stormStakeAddr,
+        stormStakeAddress,
         amountToWei
       );
       const waitApproval = approveTransfer.wait();
       if (waitApproval) {
         const result = await stormStakeContract
-          ?.stake(0, amountToWei)
+          ?.stake(amountToWei)
           .then((_) => true);
         return result;
       }
@@ -138,7 +129,13 @@ export const getHolderDetails = async (walletProvider, address) => {
   const userInfos = await holderContract?.userInfos(address);
   const lastUpdateTimeInUnix = Number(userInfos[1].toString());
   const lastUpdateTimestamp = new Date(lastUpdateTimeInUnix * 1000);
-  const formattedlastUpdateDate = `${lastUpdateTimestamp.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${lastUpdateTimestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric' })}`;
+  const formattedlastUpdateDate = `${lastUpdateTimestamp.toLocaleDateString(
+    'en-US',
+    { weekday: 'short', month: 'short', day: 'numeric' }
+  )} at ${lastUpdateTimestamp.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: 'numeric',
+  })}`;
 
   const holderStats = {
     tokenBalance: Number(
@@ -196,13 +193,15 @@ export const switchChain = async (targetChainId) => {
 export const updateHolderRewards = async (walletProvider, address) => {
   const { holderContract } = await connectWallet(walletProvider);
 
-  return await holderContract
-    ?.updateReward()
-    .then((_) => true);
+  return await holderContract?.updateReward().then((_) => true);
 };
 
 export const claimHolderRewards = async (walletProvider) => {
   const { holderContract } = await connectWallet(walletProvider);
 
   return await holderContract?.claimReward().then((_) => true);
+};
+
+export const formatMoney = (number) => {
+  return numeral(number).format('0.0a').toUpperCase();
 };

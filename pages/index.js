@@ -198,9 +198,12 @@ export default function Home() {
     if (disconnect) {
       await disconnect();
     }
-    setPoolInfo({});
-    setHolderInfo({});
+    setPoolInfo({ apy: poolInfo.apy });
+    setHolderInfo({ apy: holderInfo.apy });
     clearInterval(infoIntervalId);
+    setInputValue('');
+    setError('');
+    setInfoIntervalId(null);
     setLoading(false);
   };
 

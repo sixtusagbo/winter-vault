@@ -1,17 +1,19 @@
-import { STM_BUY_URL } from "@/utils/ConstantsUtil";
-import { formatMoney } from "@/utils/config";
+import { STM_BUY_URL } from '@/utils/ConstantsUtil';
+import { formatMoneyReadably } from '@/utils/config';
 
-const ConnectionButton = ({ isConnected, openWeb3Modal, tokenBalance, disconnectApp, formatAddress }) => {
+const ConnectionButton = ({
+  isConnected,
+  openWeb3Modal,
+  tokenBalance,
+  disconnectApp,
+  formatAddress,
+}) => {
   return (
     <div className="mi-dropdown">
       <button
         className="mi-dropbtn d-flex align-items-center connect-btn"
         onClick={() => !isConnected && openWeb3Modal()}>
-        {isConnected ? (
-          <>{formatAddress()} &nbsp;</>
-        ) : (
-          'Connect Wallet'
-        )}
+        {isConnected ? <>{formatAddress()} &nbsp;</> : 'Connect Wallet'}
 
         {isConnected && (
           <svg
@@ -32,12 +34,8 @@ const ConnectionButton = ({ isConnected, openWeb3Modal, tokenBalance, disconnect
       {isConnected && (
         <div className="mi-dropdown-content">
           <div className="d-flex justify-content-center align-items-center flex-column">
-            <img
-              className="mini-storm"
-              src="Storm_150x150.png"
-              alt=""
-            />
-            <p>{formatMoney(tokenBalance)} STM</p>
+            <img className="mini-storm" src="Storm_150x150.png" alt="" />
+            <p>{formatMoneyReadably(tokenBalance)} STM</p>
           </div>
           <a
             href={STM_BUY_URL}
@@ -55,7 +53,7 @@ const ConnectionButton = ({ isConnected, openWeb3Modal, tokenBalance, disconnect
         </div>
       )}
     </div>
-  )
+  );
 };
 
 export default ConnectionButton;

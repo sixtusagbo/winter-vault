@@ -202,6 +202,10 @@ export const claimHolderRewards = async (walletProvider) => {
   return await holderContract?.claimReward().then((_) => true);
 };
 
-export const formatMoney = (number) => {
+export const formatMoneyReadably = (number) => {
   return numeral(number).format('0.0a').toUpperCase();
+};
+
+export const formatMoney = (number) => {
+  return numeral(number).format('0,0.00');
 };

@@ -3,6 +3,7 @@ import {
   action,
   autoCompound,
   claimHolderRewards,
+  formatMoney,
   getHolderDetails,
   getPoolDetails,
   switchChain,
@@ -25,7 +26,8 @@ import {
 import { STM_BUY_URL } from '@/utils/ConstantsUtil';
 import dynamic from 'next/dynamic';
 import { defaultChainId } from '@/utils/ConstantsUtil';
-import { formatMoney } from '@/utils/config';
+import { formatMoneyReadably } from '@/utils/config';
+import CountUp from 'react-countup';
 
 const SSRLessConnectionButton = dynamic(
   () => import('../components/ConnectionButton'),
@@ -398,12 +400,22 @@ export default function Home() {
                       </div>
                       <div className="d-flex justify-content-between">
                         <p>Available $STM</p>
-                        <p className="fw-bold">{poolInfo.userBalance ?? 0}</p>
+                        <p className="fw-bold">
+                          <CountUp
+                            end={poolInfo.userBalance ?? 0}
+                            duration={2}
+                            enableScrollSpy
+                          />
+                        </p>
                       </div>
                       <div className="d-flex justify-content-between">
                         <p>My Stakings</p>
                         <p className="fw-bold">
-                          {poolInfo.userStakedAmount ?? 0}
+                          <CountUp
+                            end={poolInfo.userStakedAmount ?? 0}
+                            duration={2}
+                            enableScrollSpy
+                          />
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">
@@ -413,7 +425,7 @@ export default function Home() {
                       <div className="d-flex justify-content-between">
                         <p>Total Staked</p>
                         <p className="fw-bold">
-                          {poolInfo.totalAmountStaked ?? 0}
+                          {formatMoney(poolInfo.totalAmountStaked ?? 0)}
                         </p>
                       </div>
                     </div>
@@ -520,15 +532,15 @@ export default function Home() {
                           {/* Stake Info */}
                           <div className="d-flex flex-column">
                             <p>Your Stakings</p>
-                            <p>{poolInfo.userStakedAmount ?? 0}</p>
+                            <p>{formatMoney(poolInfo.userStakedAmount ?? 0)}</p>
                           </div>
                           <div className="d-flex flex-column">
                             <p>Your Earnings</p>
-                            <p>{poolInfo.pendingReward ?? 0}</p>
+                            <p>{formatMoney(poolInfo.pendingReward ?? 0)}</p>
                           </div>
                           <div className="d-flex flex-column">
                             <p>Wallet Balance</p>
-                            <p>{poolInfo.userBalance ?? 0}</p>
+                            <p>{formatMoney(poolInfo.userBalance ?? 0)}</p>
                           </div>
                         </div>
                       </div>
@@ -582,7 +594,12 @@ export default function Home() {
                       <div className="d-flex justify-content-between">
                         <p>$STM in Wallet</p>
                         <p className="fw-bold">
-                          {poolInfo.userBalance ?? 0} STM
+                          <CountUp
+                            end={poolInfo.userBalance ?? 0}
+                            duration={2}
+                            enableScrollSpy
+                          />{' '}
+                          STM
                         </p>
                       </div>
                     </div>

@@ -135,17 +135,20 @@ export const getHolderDetails = async (walletProvider, address) => {
 
   const holderInfo = await holderContract?.getUserView(address);
 
+  const userInfos = await holderContract?.userInfos(address);
+  const lastUpdateTimeInUnix = Number(userInfos[1].toString());
+  const lastUpdateTimestamp = new Date(lastUpdateTimeInUnix * 1000);
+  const formattedlastUpdateDate = `${lastUpdateTimestamp.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${lastUpdateTimestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric' })}`;
+
   const holderStats = {
     tokenBalance: Number(
       await convertToEth(null, holderInfo[0].toString())
     ).toFixed('2'),
-    accumulatedPoints: Number(
-      await convertToEth('gether', holderInfo[1].toString())
-    ).toFixed('2'),
-    pendingRewards: Number(
-      await convertToEth(null, holderInfo[2].toString())
-    ).toFixed('2'),
-    blocksTillNextBlizzard: Number(holderInfo[3].toString()),
+    pendingReward: Number(
+      await convertToEth(null, holderInfo[1].toString())
+    ).toFixed('4'),
+    apy: Number(holderInfo[2].toString()),
+    lastUpdatedAt: formattedlastUpdateDate,
   };
 
   return holderStats;
@@ -194,12 +197,12 @@ export const updateHolderRewards = async (walletProvider, address) => {
   const { holderContract } = await connectWallet(walletProvider);
 
   return await holderContract
-    ?.updatePoints(address)
+    ?.updateReward()
     .then((_) => true);
 };
 
 export const claimHolderRewards = async (walletProvider) => {
   const { holderContract } = await connectWallet(walletProvider);
 
-  return await holderContract?.claim().then((_) => true);
+  return await holderContract?.claimReward().then((_) => true);
 };

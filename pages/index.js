@@ -535,7 +535,7 @@ export default function Home() {
                       <div className="d-flex justify-content-between">
                         <p>APY</p>
                         <p className="fw-bold">
-                          {holderInfo.apy ?? 0}
+                          {holderInfo.apy ?? 0}%
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">

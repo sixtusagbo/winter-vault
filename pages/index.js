@@ -56,7 +56,9 @@ export default function Home() {
       const fetchData = async () => {
         if (address) {
           try {
-            const poolDetails = await getPoolDetails(walletProvider, address);
+            // TODO: Revert later
+            // const poolDetails = await getPoolDetails(walletProvider, address);
+            const poolDetails = {};
             const holderDetails = await getHolderDetails(walletProvider, address);
             setPoolInfo(poolDetails);
             setHolderInfo(holderDetails);
@@ -509,7 +511,7 @@ export default function Home() {
               <div className="con">
                 <div className="desc">
                   <h2 className="pc" style={{ marginTop: '100px' }}>
-                    HOLDERS REWARDS SYSTEM
+                    HOLDERS REWARD SYSTEM
                   </h2>
                   <p className="p">Storm Holders reward panel.</p>
                 </div>
@@ -526,26 +528,26 @@ export default function Home() {
                       src="Storm_150x150.png"
                       alt=""
                     />
-                    Hold STM to Earn STM
+                    Hold $STM to Earn $ARB
                   </div>
                   <div className="operate">
                     <div className="stake-info w-100">
                       <div className="d-flex justify-content-between">
                         <p>APY</p>
                         <p className="fw-bold">
-                          {holderInfo.accumulatedPoints ?? 0} PTS
+                          {holderInfo.apy ?? 0}
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">
                         <p>Pending Rewards</p>
                         <p className="fw-bold">
-                          {holderInfo.pendingRewards ?? 0} ARB
+                          {holderInfo.pendingReward ?? 0} ARB
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">
                         <p>Last Updated Time</p>
                         <p className="fw-bold">
-                          {holderInfo.blocksTillNextBlizzard ?? 0} BLOCKS
+                          {holderInfo.lastUpdatedAt ?? '...'}
                         </p>
                       </div>
                       <div className="d-flex justify-content-between">
